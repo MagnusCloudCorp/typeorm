@@ -1,8 +1,8 @@
 import "reflect-metadata";
-import {expect} from "chai";
-import {Connection} from "../../../../../src/connection/Connection";
-import {closeTestingConnections, createTestingConnections, reloadTestingDatabases} from "../../../../utils/test-utils";
-import {Post} from "./entity/Post";
+import { expect } from "chai";
+import { Connection } from "../../../../../src/connection/Connection";
+import { closeTestingConnections, createTestingConnections, reloadTestingDatabases } from "../../../../utils/test-utils";
+import { Post } from "./entity/Post";
 
 describe("mongodb > basic repository actions", () => {
 
@@ -152,6 +152,47 @@ describe("mongodb > basic repository actions", () => {
         expect(loadedPosts2[4]!.id).not.to.be.empty;
         expect(loadedPosts2[4]!.title).not.to.be.empty;
         expect(loadedPosts2[4]!.text).not.to.be.empty;
+
+
+    })));
+
+
+    it("should sort entities in a query", () => Promise.all(connections.map(async connection => {
+        const postRepository = connection.getRepository(Post);
+
+        // save few posts
+        const posts: Post[] = [];
+        for (let i = 0; i < 10; i++) {
+            const post = new Post();
+            post.title = "Post #" + i;
+            post.text = "Everything about post #" + i;
+            post.index = i;
+            posts.push(post);
+        }
+        await postRepository.save(posts);
+
+
+
+        // ASCENDANT SORTING
+        let queryPostsAsc = await postRepository.find({
+            order: { index: "ASC" }
+        });
+
+
+        queryPostsAsc.length.should.be.equal(10);
+        for (let i = 0; i < 10; i++) {
+            expect(queryPostsAsc[i]!.index).eq(i);
+        }
+
+        // DESCENDANT SORTING
+        let queryPostsDesc = await postRepository.find({
+            order: { index: "DESC" }
+        });
+
+        queryPostsDesc.length.should.be.equal(10);
+        for (let j = 0; j < 10; j++) {
+            expect(queryPostsDesc[j]!.index).eq(9 - j);
+        }
 
     })));
 
